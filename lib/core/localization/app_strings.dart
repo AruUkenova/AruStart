@@ -5,4 +5,12 @@ class AppStrings {
     }
     return 'Создавай идеи и находи партнёров';
   }
+
+  // 👉 ДОБАВЬ ЭТО
+  static String addIdea(String lang) {
+    if (lang == 'kk') {
+      return 'Идея қосу';
+    }
+    return 'Добавить идею';
+  }
 }
