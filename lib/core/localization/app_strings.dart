@@ -1,8 +1,8 @@
 class AppStrings {
   static String appTitle(String lang) {
     if (lang == 'kk') {
-      return 'AruStart қосымшасына қош келдіңіз';
+      return 'Идея жасап, серіктес тап';
     }
-    return 'Welcome to AruStart';
+    return 'Создавай идеи и находи партнёров';
   }
 }
