@@ -1,6 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-import '../../data/datasources/hive_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String lang;
@@ -22,23 +22,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final aboutController = TextEditingController();
   final contactController = TextEditingController();
 
+  bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
     loadProfile();
-  }
-
-  Future<void> loadProfile() async {
-    final profile = await HiveService().getProfile();
-
-    if (profile != null) {
-      nameController.text = profile['name'] ?? '';
-      cityController.text = profile['city'] ?? '';
-      skillsController.text = profile['skills'] ?? '';
-      interestController.text = profile['interest'] ?? '';
-      aboutController.text = profile['about'] ?? '';
-      contactController.text = profile['contact'] ?? '';
-    }
   }
 
   @override
@@ -52,29 +41,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  Future<void> loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('profiles')
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data();
+    if (data == null) return;
+
+    nameController.text = data['name'] ?? '';
+    cityController.text = data['city'] ?? '';
+    skillsController.text = data['skills'] ?? '';
+    interestController.text = data['interest'] ?? '';
+    aboutController.text = data['about'] ?? '';
+    contactController.text = data['contact'] ?? '';
+  }
+
   Future<void> saveProfile() async {
-    final profile = {
-      'name': nameController.text.trim(),
-      'city': cityController.text.trim(),
-      'skills': skillsController.text.trim(),
-      'interest': interestController.text.trim(),
-      'about': aboutController.text.trim(),
-      'contact': contactController.text.trim(),
-    };
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    await HiveService().saveProfile(profile);
+    setState(() {
+      isLoading = true;
+    });
 
-    if (!mounted) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(user.uid)
+          .set({
+        'uid': user.uid,
+        'email': user.email,
+        'name': nameController.text.trim(),
+        'city': cityController.text.trim(),
+        'skills': skillsController.text.trim(),
+        'interest': interestController.text.trim(),
+        'about': aboutController.text.trim(),
+        'contact': contactController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.lang == 'kk'
-              ? 'Профиль сақталды'
-              : 'Профиль сохранён',
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.lang == 'kk'
+                ? 'Профиль сақталды'
+                : 'Профиль сохранён',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.lang == 'kk'
+                ? 'Қате пайда болды'
+                : 'Произошла ошибка',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -107,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               controller: skillsController,
               decoration: InputDecoration(
                 labelText: isKk ? 'Дағдылар' : 'Навыки',
-                hintText: isKk ? 'маркетинг, SMM' : 'маркетинг, SMM',
+                hintText: 'маркетинг, SMM, Flutter',
               ),
             ),
             const SizedBox(height: 12),
@@ -115,7 +157,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               controller: interestController,
               decoration: InputDecoration(
                 labelText: isKk ? 'Қызығушылық' : 'Интерес',
-                hintText: isKk ? 'кофейня, beauty-бизнес' : 'кофейня, beauty-бизнес',
+                hintText: isKk
+                    ? 'кофейня, beauty-бизнес'
+                    : 'кофейня, beauty-бизнес',
               ),
             ),
             const SizedBox(height: 12),
@@ -129,15 +173,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: contactController,
-              decoration: InputDecoration(
-                labelText: isKk ? 'Байланыс' : 'Контакт',
-                hintText: 'Telegram / email',
+              decoration: const InputDecoration(
+                labelText: 'Telegram / Email',
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: saveProfile,
-              child: Text(isKk ? 'Сақтау' : 'Сохранить'),
+              onPressed: isLoading ? null : saveProfile,
+              child: isLoading
+                  ? const CircularProgressIndicator()
+                  : Text(isKk ? 'Сақтау' : 'Сохранить'),
             ),
           ],
         ),

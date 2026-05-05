@@ -1,11 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/localization/app_strings.dart';
 import '../../core/localization/language_provider.dart';
-import '../../data/datasources/hive_service.dart';
-import '../profile/profile_screen.dart';
+import '../auth/login_screen.dart';
 import '../partners/partner_search_screen.dart';
+import '../profile/profile_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +17,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  Future<List<Map>>? ideasFuture;
-
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
 
@@ -35,28 +35,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     {'ru': 'Еда и кафе', 'kk': 'Тамақ және кафе'},
     {'ru': 'Образование', 'kk': 'Білім беру'},
     {'ru': 'Научные проекты', 'kk': 'Ғылыми жобалар'},
-    {'ru': 'Детские услуги', 'kk': 'Балаларға арналған қызмет'},
-    {'ru': 'Финансы', 'kk': 'Қаржы'},
-    {'ru': 'Недвижимость', 'kk': 'Жылжымайтын мүлік'},
-    {'ru': 'Туризм', 'kk': 'Туризм'},
-    {'ru': 'Логистика', 'kk': 'Логистика'},
-    {'ru': 'Сельское хозяйство', 'kk': 'Ауыл шаруашылығы'},
-    {'ru': 'Ремесло', 'kk': 'Қолөнер'},
-    {'ru': 'Производство', 'kk': 'Өндіріс'},
-    {'ru': 'Услуги', 'kk': 'Қызмет көрсету'},
-    {'ru': 'Мероприятия', 'kk': 'Іс-шаралар'},
-    {'ru': 'Медиа и контент', 'kk': 'Медиа және контент'},
-    {'ru': 'Авто бизнес', 'kk': 'Авто бизнес'},
-    {'ru': 'Экология', 'kk': 'Экология'},
-    {'ru': 'Животные', 'kk': 'Үй жануарлары'},
     {'ru': 'Другое', 'kk': 'Басқа'},
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    ideasFuture = HiveService().getIdeas();
-  }
 
   @override
   void dispose() {
@@ -65,16 +45,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  void refreshIdeas() {
-    setState(() {
-      ideasFuture = HiveService().getIdeas();
-    });
-  }
-
   void resetForm() {
     titleController.clear();
     descriptionController.clear();
     selectedCategoryIndex = 0;
+  }
+
+  Future<void> addIdea() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final selectedCategory = categories[selectedCategoryIndex];
+
+    await FirebaseFirestore.instance.collection('ideas').add({
+      'userId': user.uid,
+      'title': titleController.text.trim(),
+      'description': descriptionController.text.trim(),
+      'categoryRu': selectedCategory['ru'],
+      'categoryKk': selectedCategory['kk'],
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    resetForm();
+  }
+
+  Future<void> updateIdea(String docId) async {
+    final selectedCategory = categories[selectedCategoryIndex];
+
+    await FirebaseFirestore.instance.collection('ideas').doc(docId).update({
+      'title': titleController.text.trim(),
+      'description': descriptionController.text.trim(),
+      'categoryRu': selectedCategory['ru'],
+      'categoryKk': selectedCategory['kk'],
+    });
+
+    resetForm();
+  }
+
+  Future<void> deleteIdea(String docId) async {
+    await FirebaseFirestore.instance.collection('ideas').doc(docId).delete();
   }
 
   void showAddIdeaDialog(String lang) {
@@ -115,7 +124,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     }),
                     onChanged: (value) {
                       if (value == null) return;
-
                       setDialogState(() {
                         selectedCategoryIndex = value;
                       });
@@ -138,25 +146,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return;
                     }
 
-                    final selectedCategory = categories[selectedCategoryIndex];
-
-                    final idea = {
-                      'id': DateTime.now().toString(),
-                      'title': titleController.text.trim(),
-                      'categoryRu': selectedCategory['ru'],
-                      'categoryKk': selectedCategory['kk'],
-                      'description': descriptionController.text.trim(),
-                    };
-
-                    await HiveService().saveIdea(idea);
-
-                    resetForm();
+                    await addIdea();
 
                     if (dialogContext.mounted) {
                       Navigator.pop(dialogContext);
                     }
-
-                    refreshIdeas();
                   },
                   child: Text(lang == 'kk' ? 'Сақтау' : 'Сохранить'),
                 ),
@@ -170,8 +164,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void showEditIdeaDialog({
     required String lang,
-    required Map idea,
-    required int index,
+    required String docId,
+    required Map<String, dynamic> idea,
   }) {
     titleController.text = idea['title'] ?? '';
     descriptionController.text = idea['description'] ?? '';
@@ -212,17 +206,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   DropdownButton<int>(
                     value: selectedCategoryIndex,
                     isExpanded: true,
-                    items: List.generate(categories.length, (i) {
-                      final category = categories[i];
+                    items: List.generate(categories.length, (index) {
+                      final category = categories[index];
 
                       return DropdownMenuItem<int>(
-                        value: i,
+                        value: index,
                         child: Text(category[lang] ?? ''),
                       );
                     }),
                     onChanged: (value) {
                       if (value == null) return;
-
                       setDialogState(() {
                         selectedCategoryIndex = value;
                       });
@@ -245,25 +238,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return;
                     }
 
-                    final selectedCategory = categories[selectedCategoryIndex];
-
-                    final updatedIdea = {
-                      'id': idea['id'],
-                      'title': titleController.text.trim(),
-                      'categoryRu': selectedCategory['ru'],
-                      'categoryKk': selectedCategory['kk'],
-                      'description': descriptionController.text.trim(),
-                    };
-
-                    await HiveService().updateIdea(index, updatedIdea);
-
-                    resetForm();
+                    await updateIdea(docId);
 
                     if (dialogContext.mounted) {
                       Navigator.pop(dialogContext);
                     }
-
-                    refreshIdeas();
                   },
                   child: Text(lang == 'kk' ? 'Сақтау' : 'Сохранить'),
                 ),
@@ -278,6 +257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -294,6 +274,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ref.read(languageProvider.notifier).state = const Locale('kk');
             },
             child: const Text('KZ'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+
+              if (!context.mounted) return;
+
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LoginScreen(lang: lang),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -314,37 +309,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Text(AppStrings.addIdea(lang)),
             ),
             const SizedBox(height: 12),
-Row(
-  children: [
-    Expanded(
-      child: OutlinedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProfileScreen(lang: lang),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileScreen(lang: lang),
+                        ),
+                      );
+                    },
+                    child: const Text('Профиль'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PartnerSearchScreen(lang: lang),
+                        ),
+                      );
+                    },
+                    child: Text(lang == 'kk' ? 'Серіктестер' : 'Партнёры'),
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-        child: Text(lang == 'kk' ? 'Профиль' : 'Профиль'),
-      ),
-    ),
-    const SizedBox(width: 12),
-    Expanded(
-      child: OutlinedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PartnerSearchScreen(lang: lang),
-            ),
-          );
-        },
-        child: Text(lang == 'kk' ? 'Серіктестер' : 'Партнёры'),
-      ),
-    ),
-  ],
-),
             const SizedBox(height: 20),
             DropdownButton<int?>(
               value: filterCategoryIndex,
@@ -376,14 +371,17 @@ Row(
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: FutureBuilder<List<Map>>(
-                future: ideasFuture,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('ideas')
+                    .where('userId', isEqualTo: user?.uid)
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Text(
                         lang == 'kk' ? 'Әзірге идея жоқ' : 'Пока нет идей',
@@ -391,18 +389,19 @@ Row(
                     );
                   }
 
-                  final allIdeas = snapshot.data!;
+                  final allDocs = snapshot.data!.docs;
 
-                  final ideas = filterCategoryIndex == null
-                      ? allIdeas
-                      : allIdeas.where((idea) {
+                  final docs = filterCategoryIndex == null
+                      ? allDocs
+                      : allDocs.where((doc) {
+                          final idea = doc.data() as Map<String, dynamic>;
                           final selected = categories[filterCategoryIndex!];
 
                           return idea['categoryRu'] == selected['ru'] &&
                               idea['categoryKk'] == selected['kk'];
                         }).toList();
 
-                  if (ideas.isEmpty) {
+                  if (docs.isEmpty) {
                     return Center(
                       child: Text(
                         lang == 'kk'
@@ -413,9 +412,10 @@ Row(
                   }
 
                   return ListView.builder(
-                    itemCount: ideas.length,
+                    itemCount: docs.length,
                     itemBuilder: (context, index) {
-                      final idea = ideas[index];
+                      final doc = docs[index];
+                      final idea = doc.data() as Map<String, dynamic>;
 
                       final category = lang == 'kk'
                           ? idea['categoryKk']
@@ -436,8 +436,8 @@ Row(
                           onTap: () {
                             showEditIdeaDialog(
                               lang: lang,
+                              docId: doc.id,
                               idea: idea,
-                              index: index,
                             );
                           },
                           trailing: SizedBox(
@@ -448,8 +448,7 @@ Row(
                               iconSize: 20,
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () async {
-                                await HiveService().deleteIdea(index);
-                                refreshIdeas();
+                                await deleteIdea(doc.id);
                               },
                             ),
                           ),

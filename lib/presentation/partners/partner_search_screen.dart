@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class PartnerSearchScreen extends StatefulWidget {
@@ -16,49 +18,10 @@ class _PartnerSearchScreenState extends State<PartnerSearchScreen> {
   String cityFilter = '';
   String skillFilter = '';
 
-  final partners = [
-    {
-      'name': 'Amina',
-      'city': 'Алматы',
-      'skills': 'маркетинг, SMM',
-      'interest': 'кофейня, beauty-бизнес',
-      'about': 'Бизнес бастағысы келетін SMM маманы.',
-      'contact': '@amina_start',
-    },
-    {
-      'name': 'Dias',
-      'city': 'Астана',
-      'skills': 'Flutter, UI/UX',
-      'interest': 'IT startup',
-      'about': 'Мобильді қосымша жасаумен айналысады.',
-      'contact': '@dias_dev',
-    },
-    {
-      'name': 'Aruzhan',
-      'city': 'Шымкент',
-      'skills': 'сату, клиентпен жұмыс',
-      'interest': 'онлайн дүкен',
-      'about': 'Онлайн сауда бағытын дамытқысы келеді.',
-      'contact': '@aruzhan_biz',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     final isKk = widget.lang == 'kk';
-
-    final filteredPartners = partners.where((partner) {
-      final city = partner['city']!.toLowerCase();
-      final skills = partner['skills']!.toLowerCase();
-
-      final matchesCity = cityFilter.isEmpty ||
-          city.contains(cityFilter.toLowerCase());
-
-      final matchesSkill = skillFilter.isEmpty ||
-          skills.contains(skillFilter.toLowerCase());
-
-      return matchesCity && matchesSkill;
-    }).toList();
+    final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -74,7 +37,7 @@ class _PartnerSearchScreenState extends State<PartnerSearchScreen> {
               ),
               onChanged: (value) {
                 setState(() {
-                  cityFilter = value;
+                  cityFilter = value.trim().toLowerCase();
                 });
               },
             ),
@@ -85,63 +48,118 @@ class _PartnerSearchScreenState extends State<PartnerSearchScreen> {
               ),
               onChanged: (value) {
                 setState(() {
-                  skillFilter = value;
+                  skillFilter = value.trim().toLowerCase();
                 });
               },
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: filteredPartners.isEmpty
-                  ? Center(
-                      child: Text(
-                        isKk ? 'Серіктес табылмады' : 'Партнёры не найдены',
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: filteredPartners.length,
-                      itemBuilder: (context, index) {
-                        final partner = filteredPartners[index];
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('profiles')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                        return Card(
-                          child: ListTile(
-                            title: Text(partner['name']!),
-                            subtitle: Text(
-                              '${isKk ? 'Қала' : 'Город'}: ${partner['city']}\n'
-                              '${isKk ? 'Дағдылар' : 'Навыки'}: ${partner['skills']}\n'
-                              '${isKk ? 'Қызығушылық' : 'Интерес'}: ${partner['interest']}',
-                            ),
-                            trailing: TextButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text(partner['name']!),
-                                      content: Text(
-                                        '${partner['about']}\n\n'
-                                        '${isKk ? 'Байланыс' : 'Контакт'}: ${partner['contact']}',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text(isKk ? 'Жабу' : 'Закрыть'),
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Text(
+                        isKk ? 'Профильдер жоқ' : 'Профилей пока нет',
+                      ),
+                    );
+                  }
+
+                  final profiles = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+
+                    if (currentUser != null && data['uid'] == currentUser.uid) {
+                      return false;
+                    }
+
+                    final city = (data['city'] ?? '').toString().toLowerCase();
+                    final skills =
+                        (data['skills'] ?? '').toString().toLowerCase();
+
+                    final matchesCity =
+                        cityFilter.isEmpty || city.contains(cityFilter);
+
+                    final matchesSkill =
+                        skillFilter.isEmpty || skills.contains(skillFilter);
+
+                    return matchesCity && matchesSkill;
+                  }).toList();
+
+                  if (profiles.isEmpty) {
+                    return Center(
+                      child: Text(
+                        isKk
+                            ? 'Серіктес табылмады'
+                            : 'Партнёры не найдены',
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: profiles.length,
+                    itemBuilder: (context, index) {
+                      final data =
+                          profiles[index].data() as Map<String, dynamic>;
+
+                      final name = data['name'] ?? '';
+                      final city = data['city'] ?? '';
+                      final skills = data['skills'] ?? '';
+                      final interest = data['interest'] ?? '';
+                      final about = data['about'] ?? '';
+                      final contact = data['contact'] ?? '';
+                      final email = data['email'] ?? '';
+
+                      return Card(
+                        child: ListTile(
+                          title: Text(name),
+                          subtitle: Text(
+                            '${isKk ? 'Қала' : 'Город'}: $city\n'
+                            '${isKk ? 'Дағдылар' : 'Навыки'}: $skills\n'
+                            '${isKk ? 'Қызығушылық' : 'Интерес'}: $interest',
+                          ),
+                          trailing: TextButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) {
+                                  return AlertDialog(
+                                    title: Text(name),
+                                    content: Text(
+                                      '${isKk ? 'Өзі туралы' : 'О себе'}: $about\n\n'
+                                      '${isKk ? 'Байланыс' : 'Контакт'}: $contact\n'
+                                      'Email: $email',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(dialogContext);
+                                        },
+                                        child: Text(
+                                          isKk ? 'Жабу' : 'Закрыть',
                                         ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              child: Text(
-                                isKk ? 'Профиль' : 'Профиль',
-                                style: const TextStyle(fontSize: 12),
-                              ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            child: Text(
+                              isKk ? 'Профиль' : 'Профиль',
+                              style: const TextStyle(fontSize: 12),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
