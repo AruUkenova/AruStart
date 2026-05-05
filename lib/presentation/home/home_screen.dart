@@ -2,12 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/localization/app_strings.dart';
 import '../../core/localization/language_provider.dart';
 import '../auth/login_screen.dart';
 import '../partners/partner_search_screen.dart';
 import '../profile/profile_screen.dart';
+import '../statistics/statistics_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -93,6 +95,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               title: Text(lang == 'kk' ? 'Идея қосу' : 'Добавить идею'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -183,6 +188,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               title: Text(
                 lang == 'kk' ? 'Идеяны өзгерту' : 'Редактировать идею',
               ),
@@ -260,23 +268,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F5EF),
       appBar: AppBar(
-        title: const Text('AruStart'),
+        backgroundColor: const Color(0xFFF8F5EF),
+        elevation: 0,
+        titleSpacing: 16,
+        title: Text(
+          'AruStart',
+          style: GoogleFonts.pacifico(
+            fontSize: 28,
+            color: const Color(0xFF2F5D50),
+          ),
+        ),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              minimumSize: const Size(34, 34),
+            ),
             onPressed: () {
               ref.read(languageProvider.notifier).state = const Locale('ru');
             },
-            child: const Text('RU'),
+            child: const Text(
+              'RU',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              minimumSize: const Size(34, 34),
+            ),
             onPressed: () {
               ref.read(languageProvider.notifier).state = const Locale('kk');
             },
-            child: const Text('KZ'),
+            child: const Text(
+              'KZ',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, size: 22),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
 
@@ -298,56 +330,119 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Text(
               AppStrings.appTitle(lang),
-              style: const TextStyle(fontSize: 20),
+              style: const TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF2F3E35),
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                showAddIdeaDialog(lang);
-              },
-              child: Text(AppStrings.addIdea(lang)),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProfileScreen(lang: lang),
-                        ),
-                      );
-                    },
-                    child: const Text('Профиль'),
+            const SizedBox(height: 18),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PartnerSearchScreen(lang: lang),
+                ],
+              ),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7FAF8B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                      );
-                    },
-                    child: Text(lang == 'kk' ? 'Серіктестер' : 'Партнёры'),
+                      ),
+                      onPressed: () {
+                        showAddIdeaDialog(lang);
+                      },
+                      icon: const Icon(Icons.add),
+                      label: Text(AppStrings.addIdea(lang)),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProfileScreen(lang: lang),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.person_outline),
+                          label: const Text('Профиль'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PartnerSearchScreen(lang: lang),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.people_outline),
+                          label: Text(
+                            lang == 'kk' ? 'Серіктестер' : 'Партнёры',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => StatisticsScreen(lang: lang),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.bar_chart),
+                      label: const Text('Статистика'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            DropdownButton<int?>(
-              value: filterCategoryIndex,
-              isExpanded: true,
-              hint: Text(
-                lang == 'kk'
+
+            const SizedBox(height: 18),
+
+            DropdownButtonFormField<int?>(
+              initialValue: filterCategoryIndex,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                hintText: lang == 'kk'
                     ? 'Категория бойынша сүзу'
                     : 'Фильтр по категории',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
               ),
               items: [
                 DropdownMenuItem<int?>(
@@ -369,7 +464,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 });
               },
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 16),
+
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -422,6 +519,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           : idea['categoryRu'];
 
                       return Card(
+                        elevation: 0,
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.only(
                             left: 16,
@@ -429,7 +531,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             top: 8,
                             bottom: 8,
                           ),
-                          title: Text(idea['title'] ?? ''),
+                          title: Text(
+                            idea['title'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           subtitle: Text(
                             '${category ?? ''}\n${idea['description'] ?? ''}',
                           ),
@@ -446,7 +553,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               iconSize: 20,
-                              icon: const Icon(Icons.delete_outline),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Color(0xFFB85C5C),
+                              ),
                               onPressed: () async {
                                 await deleteIdea(doc.id);
                               },
