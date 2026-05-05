@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/localization/language_provider.dart';
 import '../../data/datasources/hive_service.dart';
+import '../profile/profile_screen.dart';
+import '../partners/partner_search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -311,6 +313,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
               child: Text(AppStrings.addIdea(lang)),
             ),
+            const SizedBox(height: 12),
+Row(
+  children: [
+    Expanded(
+      child: OutlinedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProfileScreen(lang: lang),
+            ),
+          );
+        },
+        child: Text(lang == 'kk' ? 'Профиль' : 'Профиль'),
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: OutlinedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PartnerSearchScreen(lang: lang),
+            ),
+          );
+        },
+        child: Text(lang == 'kk' ? 'Серіктестер' : 'Партнёры'),
+      ),
+    ),
+  ],
+),
             const SizedBox(height: 20),
             DropdownButton<int?>(
               value: filterCategoryIndex,
