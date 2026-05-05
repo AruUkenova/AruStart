@@ -1,14 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/localization/language_provider.dart';
+import 'presentation/auth/login_screen.dart';
 import 'presentation/home/home_screen.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Firebase.initializeApp();
   await Hive.initFlutter();
 
   runApp(
@@ -42,7 +46,9 @@ class AruStartApp extends ConsumerWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF8F5EF),
       ),
-      home: const HomeScreen(),
+      home: FirebaseAuth.instance.currentUser == null
+          ? LoginScreen(lang: locale.languageCode)
+          : const HomeScreen(),
     );
   }
 }

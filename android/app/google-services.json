@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "331215886825",
+    "project_id": "arustart-82ed7",
+    "storage_bucket": "arustart-82ed7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:331215886825:android:c2b5c87157e1c2542ad378",
+        "android_client_info": {
+          "package_name": "com.example.arustart"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbtcXGy2ez8q_JrYVgxJ_ErM-Fo5fpjH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
