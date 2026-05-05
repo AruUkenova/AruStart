@@ -8,6 +8,7 @@ import 'core/localization/language_provider.dart';
 import 'presentation/auth/login_screen.dart';
 import 'presentation/home/home_screen.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

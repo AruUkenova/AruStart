@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../home/home_screen.dart';
 import 'login_screen.dart';
@@ -30,9 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> register() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -44,23 +43,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? 'Registration error'),
-        ),
+        SnackBar(content: Text(e.message ?? 'Registration error')),
       );
     } finally {
       if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
       }
     }
   }
@@ -70,50 +63,139 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isKk = widget.lang == 'kk';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isKk ? 'Тіркелу' : 'Регистрация'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                labelText: isKk ? 'Email' : 'Email',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: isKk ? 'Құпиясөз' : 'Пароль',
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: isLoading ? null : register,
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : Text(isKk ? 'Тіркелу' : 'Зарегистрироваться'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LoginScreen(lang: widget.lang),
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF8F5EF),
+              Color(0xFFDDEFE3),
+              Color(0xFFEAF4F4),
+            ],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 28,
+                    offset: const Offset(0, 14),
                   ),
-                );
-              },
-              child: Text(
-                isKk
-                    ? 'Аккаунтыңыз бар ма? Кіру'
-                    : 'Уже есть аккаунт? Войти',
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'AruStart',
+                    style: GoogleFonts.pacifico(
+                      fontSize: 38,
+                      color: const Color(0xFF2F5D50),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isKk ? 'Жаңа аккаунт құрыңыз' : 'Создайте новый аккаунт',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF5C6B63),
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      labelText: 'Email',
+                      filled: true,
+                      fillColor: const Color(0xFFF6F8F6),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      labelText: isKk ? 'Құпиясөз' : 'Пароль',
+                      filled: true,
+                      fillColor: const Color(0xFFF6F8F6),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : register,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7FAF8B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(isKk ? 'Тіркелу' : 'Зарегистрироваться'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LoginScreen(lang: widget.lang),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      isKk
+                          ? 'Аккаунтыңыз бар ма? Кіру'
+                          : 'Уже есть аккаунт? Войти',
+                      style: const TextStyle(color: Color(0xFF2F5D50)),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '2026',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 11,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
