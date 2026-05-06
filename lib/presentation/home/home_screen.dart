@@ -6,10 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/localization/app_strings.dart';
 import '../../core/localization/language_provider.dart';
-import '../auth/login_screen.dart';
-import '../partners/partner_search_screen.dart';
-import '../profile/profile_screen.dart';
-import '../statistics/statistics_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +20,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
+  final ideasBox = Hive.box('ideasBox');
 
   int selectedCategoryIndex = 0;
   int? filterCategoryIndex;
@@ -67,6 +67,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'categoryKk': selectedCategory['kk'],
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    await ideasBox.add({
+  'title': titleController.text.trim(),
+  'description': descriptionController.text.trim(),
+  'categoryRu': selectedCategory['ru'],
+  'categoryKk': selectedCategory['kk'],
+});
 
     resetForm();
   }
@@ -314,12 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               if (!context.mounted) return;
 
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LoginScreen(lang: lang),
-                ),
-              );
+              context.go('/login');
             },
           ),
         ],
@@ -379,12 +381,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProfileScreen(lang: lang),
-                              ),
-                            );
+                            context.push('/profile');
                           },
                           icon: const Icon(Icons.person_outline),
                           label: const Text('Профиль'),
@@ -394,12 +391,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PartnerSearchScreen(lang: lang),
-                              ),
-                            );
+                            context.push('/partners');
                           },
                           icon: const Icon(Icons.people_outline),
                           label: Text(
@@ -414,12 +406,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => StatisticsScreen(lang: lang),
-                          ),
-                        );
+                        context.push('/statistics');
                       },
                       icon: const Icon(Icons.bar_chart),
                       label: const Text('Статистика'),
@@ -478,6 +465,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+if (snapshot.hasError) {
+  final localIdeas = ideasBox.values.toList();
+
+  if (localIdeas.isEmpty) {
+    return Center(
+      child: Text(
+        lang == 'kk'
+            ? 'Интернет жоқ және сақталған идея жоқ'
+            : 'Нет интернета и сохранённых идей',
+      ),
+    );
+  }
+
+  return ListView.builder(
+    itemCount: localIdeas.length,
+    itemBuilder: (context, index) {
+      final idea = Map<String, dynamic>.from(localIdeas[index] as Map);
+
+      final category = lang == 'kk'
+          ? idea['categoryKk']
+          : idea['categoryRu'];
+
+      return Card(
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: ListTile(
+          title: Text(
+            idea['title'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            '${category ?? ''}\n${idea['description'] ?? ''}',
+          ),
+        ),
+      );
+    },
+  );
+}
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Text(

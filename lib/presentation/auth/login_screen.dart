@@ -1,9 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../home/home_screen.dart';
-import 'register_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   final String lang;
@@ -41,10 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      context.go('/home');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
@@ -171,12 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RegisterScreen(lang: widget.lang),
-                        ),
-                      );
+                      context.go('/register');
                     },
                     child: Text(
                       isKk
@@ -185,7 +175,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: const TextStyle(color: Color(0xFF2F5D50)),
                     ),
                   ),
-                  
                   const SizedBox(height: 2),
                   Text(
                     '2026',

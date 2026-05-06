@@ -1,18 +1,19 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/localization/language_provider.dart';
-import 'presentation/auth/login_screen.dart';
-import 'presentation/home/home_screen.dart';
-
+import 'core/router/app_router.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+  
+  await Hive.initFlutter();
+  await Hive.openBox('ideasBox');
 
   runApp(
     const ProviderScope(
@@ -27,8 +28,9 @@ class AruStartApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(languageProvider);
+    final router = createRouter(locale.languageCode);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'AruStart',
       debugShowCheckedModeBanner: false,
       locale: locale,
@@ -45,9 +47,7 @@ class AruStartApp extends ConsumerWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF8F5EF),
       ),
-      home: FirebaseAuth.instance.currentUser == null
-          ? LoginScreen(lang: locale.languageCode)
-          : const HomeScreen(),
+      routerConfig: router,
     );
   }
 }
